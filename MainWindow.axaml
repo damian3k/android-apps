@@ -1,0 +1,366 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:AndroidApps"
+        x:Class="AndroidApps.MainWindow"
+        Title="Android Apps — what's on my device"
+        Width="1240" MinWidth="1100" Height="800" MinHeight="560" WindowStartupLocation="CenterScreen"
+        DragDrop.AllowDrop="True">
+    <Window.Styles>
+        <Style Selector="Border.row">
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="#FF1B1C26"/>
+            <Setter Property="BorderBrush" Value="#FF2A2C3E"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Border.row:pointerover">
+            <Setter Property="Background" Value="#FF232433"/>
+            <Setter Property="BorderBrush" Value="#FF3E4260"/>
+        </Style>
+        <Style Selector="TextBlock.muted">
+            <Setter Property="Foreground" Value="#FF8B8CA0"/>
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Padding" Value="14,7"/>
+        </Style>
+        <Style Selector="Button.mini">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="#FF3B2431"/>
+            <Setter Property="Foreground" Value="#FFFFB9C4"/>
+            <Setter Property="BorderBrush" Value="#FF6E3B4C"/>
+        </Style>
+        <!-- keep list content clear of the scrollbar -->
+        <Style Selector="ScrollViewer">
+            <Setter Property="Padding" Value="0,0,16,0"/>
+        </Style>
+        <Style Selector="Border.dropzone">
+            <Setter Property="Padding" Value="16,14"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="#FF161722"/>
+            <Setter Property="BorderBrush" Value="#FF3E4260"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Border.dropzone.dragover">
+            <Setter Property="Background" Value="#FF1D2438"/>
+            <Setter Property="BorderBrush" Value="#FF6C93DD"/>
+        </Style>
+        <Style Selector="Button.launch">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="#FF23324A"/>
+            <Setter Property="Foreground" Value="#FFB9D3FF"/>
+            <Setter Property="BorderBrush" Value="#FF3B5A8C"/>
+        </Style>
+        <Style Selector="Button.lock">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="#FF3A3220"/>
+            <Setter Property="Foreground" Value="#FFFFD98A"/>
+            <Setter Property="BorderBrush" Value="#FF7A6233"/>
+        </Style>
+        <Style Selector="Button.ghost">
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#FF8B8CA0"/>
+        </Style>
+        <Style Selector="Image.appicon">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Stretch" Value="Uniform"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+        <StackPanel Grid.Row="0" Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="RefreshBtn" Content="Refresh" Classes="accent" IsEnabled="False"/>
+                    <ComboBox x:Name="DeviceBox" MinWidth="250" MaxWidth="340" VerticalAlignment="Center"
+                              PlaceholderText="No device"
+                              ToolTip.Tip="Devices connected now, plus ones seen before — “nearby” means Wi-Fi ADB answers and it can be used without a cable"/>
+                    <Button x:Name="ScanBtn" Content="Find on Wi-Fi" IsEnabled="False"
+                            ToolTip.Tip="Search the local network for devices with Wi-Fi ADB turned on"/>
+                    <Button x:Name="FleetBtn" Content="Multi-device…" IsEnabled="False"
+                            ToolTip.Tip="Manage several devices at once: launch, lock and unlock an app on all of them"/>
+                    <Button x:Name="WifiBtn" Content="Enable Wi-Fi" IsEnabled="False"
+                            ToolTip.Tip="Turn on Wi-Fi ADB (needs the cable once after every device restart); afterwards the cable can be unplugged"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" Margin="12,0,0,0">
+                    <ToggleButton x:Name="MtpBtn" Content="MTP" IsEnabled="False" VerticalAlignment="Center"
+                                  ToolTip.Tip="MTP (Media Transfer Protocol): switch USB to MTP so file explorers on your computer can browse the device. Turning off returns USB to ADB-only."/>
+                    <CheckBox x:Name="AwakeCheck" Content="Keep awake" IsEnabled="False" VerticalAlignment="Center"
+                              ToolTip.Tip="Quest: ignore the proximity sensor so it stays on when taken off (a restart turns it off). Phone / tablet: the screen stays on while charging. Keeps Wi-Fi ADB and kiosk apps running; uses more battery."/>
+                    <ComboBox x:Name="SortBox" SelectedIndex="0" MinWidth="120" VerticalAlignment="Center">
+                        <ComboBoxItem Content="Sort: size"/>
+                        <ComboBoxItem Content="Sort: name"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+            <TextBlock x:Name="StatusText" Classes="muted" Text="Starting…" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Spacing="6" Margin="0,12,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="StorageSummary" FontWeight="SemiBold" Text="—" TextTrimming="CharacterEllipsis" Margin="0,0,12,0"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                            VerticalAlignment="Center">
+                    <TextBlock FontSize="11" Classes="muted">
+                        <Run Foreground="#FF6C93DD">■</Run><Run Text=" store"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Classes="muted">
+                        <Run Foreground="#FFDE9257">■</Run><Run Text=" sideloaded"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Classes="muted">
+                        <Run Foreground="#FF5A5C6E">■</Run><Run Text=" app data + system"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Classes="muted">
+                        <Run Foreground="#FF33344A">■</Run><Run Text=" free"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Classes="muted" Text="• hover an app below"/>
+                </StackPanel>
+            </Grid>
+            <local:StorageBar x:Name="Bar" Height="70"/>
+        </StackPanel>
+
+        <TabControl x:Name="Tabs" Grid.Row="2" Margin="0,14,0,0">
+            <TabItem Header="Store — official">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="2,8,16,8">
+                        <TextBlock x:Name="StoreSummary" FontWeight="SemiBold" VerticalAlignment="Center" Text="—"/>
+                        <TextBox x:Name="StoreSearch" Grid.Column="1" Classes="clearButton" Width="280"
+                                 Watermark="Search by name…"/>
+                    </Grid>
+                    <ScrollViewer>
+                        <ItemsControl x:Name="StoreList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:DeviceApp">
+                                    <Border Classes="row"
+                                            PointerEntered="OnRowPointerEntered"
+                                            PointerExited="OnRowPointerExited"
+                                            ToolTip.Tip="{Binding DisplayName}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Image Classes="appicon" Source="{Binding Icon}"/>
+                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding VersionText}" Classes="muted"
+                                                               FontSize="11" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock Classes="muted" FontSize="11"
+                                                           Text="{Binding SourceText}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock FontWeight="SemiBold" VerticalAlignment="Center"
+                                                           Text="{Binding SizeText}"/>
+                                                <TextBlock Text="{Binding RunStateText}" FontSize="11"
+                                                           Foreground="#FF57D98A" VerticalAlignment="Center"/>
+                                                <Button Classes="launch" Content="Launch"
+                                                        IsVisible="{Binding CanLaunch}"
+                                                        Click="OnLaunchClick"/>
+                                                <Button Classes="launch" Content="Stop"
+                                                        IsVisible="{Binding CanStop}"
+                                                        ToolTip.Tip="Force-stop the app"
+                                                        Click="OnStopClick"/>
+                                                <Button Classes="lock" Content="Lock"
+                                                        IsVisible="{Binding CanLock}"
+                                                        ToolTip.Tip="Kiosk: pin this app (no other apps can be opened); the system menu / home screen is closed again within ~1 s and a quit app is restarted. Needs this window open and connected."
+                                                        Click="OnLockClick"/>
+                                                <Button Classes="lock" Content="Unlock"
+                                                        IsVisible="{Binding IsLocked}"
+                                                        Click="OnUnlockClick"/>
+                                                <Button Classes="mini" Content="Uninstall"
+                                                        Click="OnUninstallClick"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Sideloaded — unknown sources">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="2,8,16,8">
+                        <TextBlock x:Name="SideSummary" FontWeight="SemiBold" VerticalAlignment="Center" Text="—"/>
+                        <TextBox x:Name="SideSearch" Grid.Column="1" Classes="clearButton" Width="280"
+                                 Watermark="Search by name…"/>
+                    </Grid>
+                    <ScrollViewer>
+                        <ItemsControl x:Name="SideList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:DeviceApp">
+                                    <Border Classes="row"
+                                            PointerEntered="OnRowPointerEntered"
+                                            PointerExited="OnRowPointerExited"
+                                            ToolTip.Tip="{Binding DisplayName}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Image Classes="appicon" Source="{Binding Icon}"/>
+                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding VersionText}" Classes="muted"
+                                                               FontSize="11" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock Classes="muted" FontSize="11"
+                                                           Text="{Binding SourceText}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock FontWeight="SemiBold" VerticalAlignment="Center"
+                                                           Text="{Binding SizeText}"/>
+                                                <TextBlock Text="{Binding RunStateText}" FontSize="11"
+                                                           Foreground="#FF57D98A" VerticalAlignment="Center"/>
+                                                <Button Classes="launch" Content="Launch"
+                                                        IsVisible="{Binding CanLaunch}"
+                                                        Click="OnLaunchClick"/>
+                                                <Button Classes="launch" Content="Stop"
+                                                        IsVisible="{Binding CanStop}"
+                                                        ToolTip.Tip="Force-stop the app"
+                                                        Click="OnStopClick"/>
+                                                <Button Classes="lock" Content="Lock"
+                                                        IsVisible="{Binding CanLock}"
+                                                        ToolTip.Tip="Kiosk: pin this app (no other apps can be opened); the system menu / home screen is closed again within ~1 s and a quit app is restarted. Needs this window open and connected."
+                                                        Click="OnLockClick"/>
+                                                <Button Classes="lock" Content="Unlock"
+                                                        IsVisible="{Binding IsLocked}"
+                                                        Click="OnUnlockClick"/>
+                                                <Button Classes="mini" Content="Uninstall"
+                                                        Click="OnUninstallClick"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Large files (app data)">
+                <DockPanel>
+                    <TextBlock x:Name="FilesSummary" DockPanel.Dock="Top" FontWeight="SemiBold"
+                               Margin="2,10,0,8" Text="Press Refresh to scan for large files"/>
+                    <ScrollViewer>
+                        <ItemsControl x:Name="FilesList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:LargeFile">
+                                    <Border Classes="row"
+                                            ToolTip.Tip="{Binding Path}">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding SizeText}" FontWeight="SemiBold"
+                                                               Foreground="#FFDE9257"/>
+                                                </StackPanel>
+                                                <TextBlock Classes="muted" FontSize="11"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding Dir}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock Classes="muted" VerticalAlignment="Center" FontSize="11"
+                                                           Text="{Binding Ext}"/>
+                                                <Button Classes="mini" Content="Delete"
+                                                        Click="OnDeleteFileClick"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+            <TabItem x:Name="InstallTab" Header="Install apps">
+                <DockPanel>
+                    <Border x:Name="DropZone" Classes="dropzone" DockPanel.Dock="Top" Margin="0,10,0,10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Spacing="3" VerticalAlignment="Center">
+                                <TextBlock FontWeight="SemiBold" FontSize="15"
+                                           Text="Drop .apk files or game folders here"/>
+                                <TextBlock Classes="muted" FontSize="11" TextWrapping="Wrap"
+                                           Text="OBB data is picked up automatically: a &lt;package&gt; folder or main.*.&lt;package&gt;.obb next to the APK goes to /sdcard/Android/obb/&lt;package&gt;/"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                        VerticalAlignment="Center" Margin="12,0,0,0">
+                                <Button x:Name="PickApkBtn" Content="Choose APK…"/>
+                                <Button x:Name="PickFolderBtn" Content="Choose folder…"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="2,0,0,8">
+                        <TextBlock x:Name="QueueSummary" FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Text="Queue is empty"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <CheckBox x:Name="GrantCheck" IsChecked="True" VerticalAlignment="Center"
+                                      ToolTip.Tip="pm install -g: grant every permission the app asks for, so it does not prompt in the device"
+                                      Content="Grant all permissions"/>
+                            <Button x:Name="ClearDoneBtn" Content="Clear finished" IsEnabled="False"/>
+                            <Button x:Name="CancelInstallBtn" Content="Cancel" IsVisible="False"/>
+                            <Button x:Name="InstallAllBtn" Content="Install" Classes="accent" IsEnabled="False"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <ScrollViewer>
+                        <ItemsControl x:Name="InstallList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="local:InstallItem">
+                                    <Border Classes="row" ToolTip.Tip="{Binding ApkPath}">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Image Classes="appicon" Source="{Binding Icon}"/>
+                                            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding VersionText}" Classes="muted"
+                                                               FontSize="11" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding ExistingText}" FontSize="11"
+                                                               Foreground="#FFDE9257" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding DetailsText}"/>
+                                                <TextBlock FontSize="12" TextWrapping="Wrap"
+                                                           Foreground="{Binding StatusBrush}"
+                                                           Text="{Binding StatusText}"/>
+                                                <ProgressBar IsVisible="{Binding IsBusy}" Height="4" MinHeight="4"
+                                                             Margin="0,2,0,0" Maximum="100"
+                                                             Value="{Binding Progress}"
+                                                             IsIndeterminate="{Binding IsIndeterminate}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                                        VerticalAlignment="Center" Margin="10,0,0,0">
+                                                <TextBlock Text="{Binding RunStateText}" FontSize="11"
+                                                           Foreground="#FF57D98A" VerticalAlignment="Center"/>
+                                                <Button Classes="launch" Content="Launch"
+                                                        IsVisible="{Binding CanLaunch}"
+                                                        Click="OnLaunchClick"/>
+                                                <Button Classes="launch" Content="Stop"
+                                                        IsVisible="{Binding CanStop}"
+                                                        ToolTip.Tip="Force-stop the app"
+                                                        Click="OnStopClick"/>
+                                                <Button Classes="ghost" Content="Install again"
+                                                        IsVisible="{Binding IsInstalled}"
+                                                        ToolTip.Tip="Install the same APK (and OBB) once more"
+                                                        Click="OnInstallAgainClick"/>
+                                                <Button Classes="ghost" Content="Remove"
+                                                        IsEnabled="{Binding CanRemove}"
+                                                        Click="OnRemoveQueuedClick"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
